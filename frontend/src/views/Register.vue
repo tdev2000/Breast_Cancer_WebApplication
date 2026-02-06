@@ -2,23 +2,55 @@
     <div class="container">
         <h2>Registration</h2>
 
-        <input placeholder="Enter your name"/>
-        <input placeholder="Enter your email"/>
-        <input type="password" placeholder="Password"/>
+        <input v-model="name" placeholder="Enter your name"/>
+        <input v-model="email" placeholder="Enter your email"/>
+        <input v-model="password" type="password" placeholder="Password"/>
 
         <label class="checkbox">
-            <input type="checkbox"/> I agree with <span>Terms and Conditions</span> and <span>Privacy Policy</span>
+        <input type="checkbox"/>I agree with <span>Terms and Conditions</span> and <span>Privacy Policy</span>
         </label>
 
-        <button class="primary">Sign Up</button>
+        <button class="primary" @click="register">Sign Up</button>
         <p class="small">Already have an account? <span @click="$router.push('/login')">Log in</span></p>
     </div>
 </template>
 
+<script>
+export default {
+    data() {
+        return {
+            name: "",
+            email: "",
+            password: ""
+        };
+    },
+    methods: {
+        register() {
+            if(this.password.length < 8){
+                alert("Password must be at least 8 characters long.");
+                return;
+            }
+            //Save doctor details
+            localStorage.setItem("doctorName", this.name);
+            localStorage.setItem("doctorEmail", this.email);
+            localStorage.setItem("doctorPassword", this.password);
+            localStorage.setItem("isLoggedIn", "true");
+            
+            this.$router.push('/upload');
+        }
+    }
+};
+</script>
+
 <style scoped>
 .container{
-    text-align: center;
+    max-width: 400px;
+    margin: 0 auto;
     padding: 40px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 input{
     width: 260px;
@@ -30,6 +62,8 @@ input{
 }
 .checkbox{
     font-size: 14px;
+    align-items: center;
+    margin: 10px 0;
 }
 span{
     color: #DE77AB;

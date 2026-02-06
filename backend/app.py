@@ -2,6 +2,7 @@
 #----------------------------------------------
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import tensorflow as tf
 import numpy as np
 import cv2
@@ -12,6 +13,11 @@ import os
 #----------------------------------------------
 
 app = Flask(__name__)
+CORS(app)   #Enable CORS for all routes
+
+@app.route("/", methods=["GET"])
+def home():
+    return "Breast Cancer Detection API is running."
 
 #----------------------------------------------
 #Folder to save uploaded images
@@ -74,6 +80,7 @@ def predict():
     if "image" not in request.files:
         return jsonify({"error": "No image uploaded"})
     
+
     file = request.files["image"]
 
     #Save uploaded image
@@ -81,18 +88,18 @@ def predict():
     file.save(file_path)
 
     #Preprocess image and make prediction
-    preprocess_image = preprocess_image(file_path)
-    predictions = model.predict(preprocess_image)
+    processed_image = preprocess_image(file_path)
+    predictions = model.predict(processed_image)
 
     #Get predicted class and confidence
     predicted_index = np.argmax(predictions)
     predicted_class = class_names[predicted_index]
-    confidence = float(np.max(predictions)) * 100
+    confidence = float(predictions[0][predicted_index])
 
     #Send rsult to frontend
     return jsonify({
         "prediction": predicted_class,
-        "confidence": round(confidence , 2)
+        "confidence": confidence
     })
 
 #----------------------------------------------

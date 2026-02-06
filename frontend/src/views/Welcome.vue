@@ -35,7 +35,7 @@ h1 span{
     padding: 12px 40px;
     border-radius: 25px;
     border: none;
-    margin: 10px 0;
+    margin: 10px 10px;
 }
 .outline{
     background: transparent;
@@ -43,6 +43,7 @@ h1 span{
     border: 2px solid #B7087A;
     padding: 12px 40px;
     border-radius: 25px;
+    margin: 10px 10px;
 }
 .subtitle{
     font-weight: bold;
