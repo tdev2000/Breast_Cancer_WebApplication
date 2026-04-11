@@ -1,109 +1,102 @@
-#IMPORT REQUIRED LIBRARIES
-#----------------------------------------------
-
+# ----------------------------------------------
+# IMPORT REQUIRED LIBRARIES
+# ----------------------------------------------
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import tensorflow as tf
 import numpy as np
 import cv2
 import os
+from flask_cors import CORS
 
-#----------------------------------------------
-#INITIALIZE FLASK APP
-#----------------------------------------------
-
+# ----------------------------------------------
+# INITIALIZE FLASK APP
+# ----------------------------------------------
 app = Flask(__name__)
-CORS(app)   #Enable CORS for all routes
+CORS(
+    app,
+    resources={r"/predict": {"origins": "*"}},
+    supports_credentials=False
+)
 
 @app.route("/", methods=["GET"])
 def home():
-    return "Breast Cancer Detection API is running."
+    return "Breast Cancer Detection API (TFLite) is running."
 
-#----------------------------------------------
-#Folder to save uploaded images
-#----------------------------------------------
+# ----------------------------------------------
+# UPLOAD FOLDER
+# ----------------------------------------------
+UPLOAD_FOLDER = "uploads"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-UPLOAD_FOLDER = 'uploads'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-#Create upload folder if it,s not exists
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-#----------------------------------------------
-#LOAD PRE-TRAINED MODEL
-#----------------------------------------------
-model = tf.keras.models.load_model("ai/saved_model/breast_cancer_cnn.keras")
+# ----------------------------------------------
+# LOAD TFLITE MODEL
+# ----------------------------------------------
+interpreter = tf.lite.Interpreter(
+    model_path="ai/breast_cancer_cnn.tflite"
+)
+interpreter.allocate_tensors()
 
-#----------------------------------------------
-#Class labels
-#----------------------------------------------
+# Get input & output details
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
+
+# ----------------------------------------------
+# CLASS LABELS
+# ----------------------------------------------
 class_names = ["Normal", "Benign", "Malignant"]
 
-#----------------------------------------------
-#mage preprocessing function using OpenCv
-#----------------------------------------------
-
+# ----------------------------------------------
+# IMAGE PREPROCESSING FUNCTION
+# ----------------------------------------------
 def preprocess_image(image_path):
-
-    #Read image using OpenCv
     image = cv2.imread(image_path)
-    
-    #Convert BGR to RGB
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = cv2.resize(image, (224, 224))
 
-    #Resize image to 224x224
-    image_resized= cv2.resize(image_rgb, (224, 224))
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    _, thresholded = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+    thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2RGB)
 
-    #Convert to grayscale for thresholding
-    gray = cv2.cvtColor(image_resized, cv2.COLOR_RGB2GRAY)
+    image = thresholded.astype(np.float32) / 255.0
+    image = np.expand_dims(image, axis=0)
 
-    #Apply thresholding
-    _, threshholded = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+    return image
 
-    #Thresholded back to RGB
-    threshholded_rgb = cv2.cvtColor(threshholded, cv2.COLOR_GRAY2RGB)
-
-    #Normalize image values to [0,1]
-    image_normalized = threshholded_rgb / 255.0
-
-    #Expand dimensions to match model input
-    image_final = np.expand_dims(image_normalized, axis=0)
-    return image_final
-
-#----------------------------------------------
-#Prediction Route
-#----------------------------------------------
+# ----------------------------------------------
+# PREDICTION ROUTE
+# ----------------------------------------------
 @app.route("/predict", methods=["POST"])
 def predict():
-    #Check if image is uploaded
     if "image" not in request.files:
-        return jsonify({"error": "No image uploaded"})
-    
+        return jsonify({"error": "No image uploaded"}), 400
 
     file = request.files["image"]
-
-    #Save uploaded image
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+    file_path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
     file.save(file_path)
 
-    #Preprocess image and make prediction
-    processed_image = preprocess_image(file_path)
-    predictions = model.predict(processed_image)
+    # Preprocess image
+    image = preprocess_image(file_path)
 
-    #Get predicted class and confidence
-    predicted_index = np.argmax(predictions)
+    # Run inference
+    interpreter.set_tensor(input_details[0]["index"], image)
+    interpreter.invoke()
+    output = interpreter.get_tensor(output_details[0]["index"])
+
+    predicted_index = int(np.argmax(output))
     predicted_class = class_names[predicted_index]
-    confidence = float(predictions[0][predicted_index])
+    confidence = float(output[0][predicted_index])
 
-    #Send rsult to frontend
     return jsonify({
         "prediction": predicted_class,
-        "confidence": confidence
+        "confidence": confidence 
     })
 
-#----------------------------------------------
-#Run the Flask app
-#----------------------------------------------
+# ----------------------------------------------
+# RUN FLASK APP
+# ----------------------------------------------
 if __name__ == "__main__":
     app.run(debug=True)
