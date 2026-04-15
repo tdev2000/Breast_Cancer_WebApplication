@@ -32,14 +32,27 @@
 export default {
     data() {
         return {
-            patients: []
+            patients: []    //store patients from backend
         };
     },
-    mounted() {
-        //Load patients from localStorage
-        const savedPatients = localStorage.getItem("patients");
-        if (savedPatients) {
-            this.patients = JSON.parse(savedPatients);
+
+    //runs automatically when page loads
+    async mounted() {
+        try {
+            //get logged-in doctor ID browser storage
+            const dotorId = localStorage.getItem("dotorId");
+
+            //call backend API to get patients for this doctor
+            const response = await fetch(`http://localhost:8080/api/patients?doctorId=${dotorId}`);
+        
+            //convert response to JSON
+            const data = await response.json();
+
+            //store data in patients array(for table display)
+            this.patients = data;
+        } catch (error) {
+            //if anything fails, show error in console
+            console.error("Error fetching patient data:", error);
         }
     }
 };

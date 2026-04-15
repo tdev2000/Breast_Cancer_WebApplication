@@ -31,6 +31,28 @@ CORS(
 def home():
     return "Breast Cancer Detection API (TFLite) is running."
 
+#----------------------------------------------
+# LOGIN ROUTE
+#----------------------------------------------
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    conn = get_db()
+    doctor = conn.execute("SELECT * FROM doctors WHERE email = ? AND password = ?", 
+                          (email, password)).fetchone()
+    conn.close()
+
+    if doctor:
+        return jsonify({
+            "success": "Login successful", 
+            "doctor_id": doctor["id"], 
+            "name": doctor["name"]})
+    else:
+        return jsonify({"success": "False"}), 401
+
 # ----------------------------------------------
 # UPLOAD FOLDER
 # ----------------------------------------------
@@ -86,6 +108,9 @@ def predict():
     file_path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
     file.save(file_path)
 
+    #Get doctor ID from forntend
+    doctor_id = request.form.get("doctor_id")
+
     # Preprocess image
     image = preprocess_image(file_path)
 
@@ -98,29 +123,60 @@ def predict():
     predicted_class = class_names[predicted_index]
     confidence = float(output[0][predicted_index])
 
+    # Save prediction to database
+    conn = get_db()
+    conn.execute("""
+    INSERT INTO patients 
+    (doctor_id, first_name, last_name, date_of_birth, history, prediction, confidence) 
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+        doctor_id, "Temp", "Temp", "N/A", "0", predicted_class, confidence))
+    
+    conn.commit()
+    conn.close()
+
     return jsonify({
         "prediction": predicted_class,
         "confidence": confidence 
     })
 
-@app.route("/login", methods=["POST"])
-def login():
-    data = request.get_json()
-    email = data.get("email")
-    password = data.get("password")
+    #--------------------------------------------
+    #GET FORM DATA FROM FRONTHEAD
+    #--------------------------------------------
+    doctor_id = request.form.get("doctor_id")
+    first_name = request.form.get("first_name")
+    last_name = request.form.get("last_name")
+    date_of_birth = request.form.get("date_of_birth")
+    history = request.form.get("history")   
 
-    conn = get_db()
-    doctor = conn.execute("SELECT * FROM doctors WHERE email = ? AND password = ?", 
-                          (email, password)).fetchone()
+    #--------------------------------------------
+    #SAVE TO DATABASE
+    #--------------------------------------------
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()  
+
+    cursor.execute("""
+    INSERT INTO patients
+    (doctor_id, first_name, last_name, date_of_birth, history, prediction, confidence)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+        doctor_id, first_name, last_name, date_of_birth, history, predicted_class, confidence))
+
+    conn.commit()
     conn.close()
 
-    if doctor:
-        return jsonify({
-            "success": "Login successful", 
-            "doctor_id": doctor["id"], 
-            "name": doctor["name"]})
-    else:
-        return jsonify({"success": "False"}), 401
+# ----------------------------------------------
+# GET PATIENTS ROUTE
+#-----------------------------------------------
+@app.route("/patients/<doctor_id>", methods=["GET"])
+def get_patients(doctor_id):
+    conn = get_db()
+    patients = conn.execute(
+        "SELECT * FROM patients WHERE doctor_id = ?", (doctor_id,)).fetchall()
+    conn.close()
+
+    return jsonify([dict(patient) for patient in patients])
+
 # ----------------------------------------------
 # RUN FLASK APP
 # ----------------------------------------------

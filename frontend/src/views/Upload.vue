@@ -52,7 +52,14 @@
                 }
 
                 const formData = new FormData();
+
+                //sending everything before fetching
                 formData.append('image', this.image);
+                formData.append('firstName', this.firstName);
+                formData.append('lastName', this.lastName)
+                formData.append('dateOfBirth', this.dateOfBirth);
+                formData.append('history', this.history);
+                formData.append('doctorId', localStorage.getItem("doctorId"));
                 
                 try {
                     const response = await fetch('http://localhost:5000/predict', {
@@ -61,24 +68,14 @@
                     });
 
                     const data = await response.json();
+                    //show result
                     this.result = data;
+                    
+                    alert("Patient details saved successfully.");
 
-                        //save patients details
-                        const patient = {
-                            firstName: this.firstName,
-                            lastName: this.lastName,
-                            dateOfBirth: this.dateOfBirth,
-                            history: this.history,
-                            prediction: data.prediction,
-                            confidence: data.confidence
-                        };
 
-                        //Save to localStorage
-                        const patients = JSON.parse(localStorage.getItem("patients")) || [];
-                        patients.push(patient);
-                        localStorage.setItem("patients", JSON.stringify(patients));
-
-                        alert("Patient details saved successfully.");
+                        //doctor id
+                        formData.append('doctorId', localStorage.getItem("doctorId"));
 
                 } catch (error) {
                     console.error('There was a problem with the fetch operation:', error);
