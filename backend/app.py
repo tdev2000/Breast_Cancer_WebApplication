@@ -48,6 +48,49 @@ def is_valid_password(password):
          re.search(r"[0-9]", password) and
          re.search(r"[!@#$%^&*]", password)
     )
+
+#----------------------------------------------
+# REGISTER ROUTE
+#----------------------------------------------
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.get_json()
+
+    name = data.get("name")
+    email = data.get("email")
+    password = data.get("password")
+
+    #------------------ VALIDATION-------------------
+    if not name:
+        return jsonify({"error": "Name is required"}), 400
+    if not email or not is_valid_email(email):
+        return jsonify(
+            {"error": "Invalid email format"}
+            ), 400
+    if not password or not is_valid_password(password):
+        return jsonify(
+            {"error": "Password must be at least 8 characters long, include a number & special character"}
+            ), 400  
+    
+    #------------------DATABASE CHECK-------------------
+    conn = get_db()
+    existing_doctor = conn.execute(
+        "SELECT * FROM doctors WHERE email = ?", (email,)
+    ).fetchone()
+
+    if existing_doctor:
+        conn.close()
+        return jsonify({"error": "Already registered"}), 400
+    
+    #Insert new doctor into database
+    conn.execute(
+        "INSERT INTO doctors (name, email, password) VALUES (?, ?, ?)", 
+        (name, email, password)
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": "Doctor registered successfully"})
 #----------------------------------------------
 # LOGIN ROUTE
 #----------------------------------------------
