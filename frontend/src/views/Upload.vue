@@ -72,11 +72,7 @@
                     this.result = data;
                     
                     alert("Patient details saved successfully.");
-
-
-                        //doctor id
-                        formData.append('doctorId', localStorage.getItem("doctorId"));
-
+                
                 } catch (error) {
                     console.error('There was a problem with the fetch operation:', error);
                     alert('Failed to upload image. Please try again.');

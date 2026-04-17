@@ -21,15 +21,41 @@ export default {
         };
     },
     methods: {
-        login() {
-            const savedEmail = localStorage.getItem("doctorEmail");
-            const savedPassword = localStorage.getItem("doctorPassword");
+        async login() {
+            try {
+                //call backend API to validate login
+                const response = await fetch("http://localhost:8080/api/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        email: this.email,
+                        password: this.password
+                    })
+                });
 
-            if (this.email === savedEmail && this.password === savedPassword) {
-                localStorage.setItem("isLoggedIn", "true");
-                this.$router.push('/upload');
-            } else {
-                alert("Invalid email or password. Please try again.");
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error("Login failed");
+                }
+
+                if (response.ok) {
+                    //store doctor info 
+                    localStorage.setItem("doctorId", data.doctorId);
+                    localStorage.setItem("doctorName", data.doctorName);
+                    localStorage.setItem("isLoggedIn", "true");
+
+                    //redirect to dashboard after successful login
+                    this.$router.push('/dashboard');
+                } else {
+                    alert("Invalid email or password. Please try again.");
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("Login failed. Please check your credentials and try again.");
             }
         }
     }

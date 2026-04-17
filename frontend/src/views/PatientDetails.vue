@@ -17,9 +17,9 @@
             </thead>
             <tbody>
                 <tr v-for="(patient, index) in patients" :key="index">
-                    <td>{{ patient.firstName }}</td>
-                    <td>{{ patient.lastName }}</td>
-                    <td>{{ patient.dateOfBirth }}</td>
+                    <td>{{ patient.first_name}}</td>
+                    <td>{{ patient.last_name }}</td>
+                    <td>{{ patient.date_of_birth }}</td>
                     <td>{{ patient.history ? 'Yes' : 'No' }}</td>
                     <td>{{ patient.prediction }}</td>
                     <td>{{ (patient.confidence * 100).toFixed(2) }}%</td>
