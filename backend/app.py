@@ -23,7 +23,6 @@ def get_db():
 # ----------------------------------------------
 app = Flask(__name__)
 app.secret_key = "secret_key_123"  #required for session tracking
-CORS(app,supports_credentials=True),
 
 #Enable CORS with credentials
 CORS(app,supports_credentials=True),
@@ -38,30 +37,48 @@ def home():
 #----------------------------------------------
 # VALIDATION FUCNTION
 #----------------------------------------------
-
 #Check email format
 def is_valid_email(email):
-    pattern = (r"[^@]+@[^@]+\.[^@]+"), email
+    pattern = r"[^@]+@[^@]+\.[^@]+"
     return re.match(pattern, email) is not None
-
+#Check password rules
 def is_valid_password(password):
-    return len(password) >= 8
+    return (
+         len(password) >= 8 and
+         re.search(r"[0-9]", password) and
+         re.search(r"[!@#$%^&*]", password)
+    )
 #----------------------------------------------
 # LOGIN ROUTE
 #----------------------------------------------
 @app.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
+
     email = data.get("email")
     password = data.get("password")
 
+    #------------------ VALIDATION-------------------
+    if not email or not is_valid_email(email):
+        return jsonify(
+            {"error": "Invalid email format"}
+            ), 400
+    if not password or not is_valid_password(password):
+        return jsonify(
+            {"error": "Password must be at least 8 characters long, include a number & special character"}
+            ), 400  
+    
+    #------------------DATABASE CHECK-------------------
+
     conn = get_db()
-    doctor = conn.execute("SELECT * FROM doctors WHERE email = ? AND password = ?", 
-                          (email, password)
+    doctor = conn.execute(
+        "SELECT * FROM doctors WHERE email = ? AND password = ?", 
+        (email, password)
     ).fetchone()
     conn.close()
 
     if doctor:
+        #Store doctor info in session 
         session["doctor_id"] = doctor["id"]
         session["doctor_name"] = doctor["name"]
 
@@ -71,16 +88,15 @@ def login():
             "name": doctor["name"]
         })
     else:
-        return jsonify({"success": "False"}), 401
-
-# ----------------------------------------------
-# UPLOAD FOLDER
-# ----------------------------------------------
-UPLOAD_FOLDER = "uploads"
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+        return jsonify({"error": "Invalid email or password"}), 401
+    
+#----------------------------------------------
+# LOGOUT ROUTE
+#----------------------------------------------
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({"message": "Logged out successfully"})
 
 # ----------------------------------------------
 # LOAD TFLITE MODEL
@@ -115,26 +131,37 @@ def preprocess_image(image_path):
     image = np.expand_dims(image, axis=0)
 
     return image
+# ----------------------------------------------
+# UPLOAD FOLDER
+# ----------------------------------------------
+UPLOAD_FOLDER = "uploads"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+if not os.path.exists(UPLOAD_FOLDER):   
+    os.makedirs(UPLOAD_FOLDER)
 
 # ----------------------------------------------
-# PREDICTION ROUTE
+# PREDICTION ROUTE -SESSION BASED
 # ----------------------------------------------
 @app.route("/predict", methods=["POST"])
 def predict():
+
+    #Check if doctor is logged in
+    doctor_id = session.get("doctor_id")
+    if not doctor_id:
+        return jsonify({"error": "Unauthorized - Please log in"}), 401
+    
     if "image" not in request.files:
         return jsonify({"error": "No image uploaded"}), 400
-
+    
     file = request.files["image"]
     file_path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
     file.save(file_path)
 
-    #Get doctor ID from forntend
-    doctor_id = request.form.get("doctor_id")
-
     # Preprocess image
     image = preprocess_image(file_path)
 
-    # Run inference
+    # Run model
     interpreter.set_tensor(input_details[0]["index"], image)
     interpreter.invoke()
     output = interpreter.get_tensor(output_details[0]["index"])
@@ -150,7 +177,8 @@ def predict():
     (doctor_id, first_name, last_name, date_of_birth, history, prediction, confidence) 
     VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
-        doctor_id, "Temp", "Temp", "N/A", "0", predicted_class, confidence))
+        doctor_id, "Temp", "Temp", "N/A", "0", predicted_class, confidence
+         ))
     
     conn.commit()
     conn.close()
@@ -160,39 +188,16 @@ def predict():
         "confidence": confidence 
     })
 
-    #--------------------------------------------
-    #GET FORM DATA FROM FRONTHEAD
-    #--------------------------------------------
-    doctor_id = request.form.get("doctor_id")
-
-    if not doctor_id:
-        return jsonify({"error": "Doctor ID is required"}), 401
-    first_name = request.form.get("first_name")
-    last_name = request.form.get("last_name")
-    date_of_birth = request.form.get("date_of_birth")
-    history = request.form.get("history")   
-
-    #--------------------------------------------
-    #SAVE TO DATABASE
-    #--------------------------------------------
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()  
-
-    cursor.execute("""
-    INSERT INTO patients
-    (doctor_id, first_name, last_name, date_of_birth, history, prediction, confidence)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (
-        doctor_id, first_name, last_name, date_of_birth, history, predicted_class, confidence))
-
-    conn.commit()
-    conn.close()
-
 # ----------------------------------------------
-# GET PATIENTS ROUTE
+# GET PATIENTS -ONLY FOR THE LOGGED IN DOCTOR
 #-----------------------------------------------
-@app.route("/patients/<doctor_id>", methods=["GET"])
-def get_patients(doctor_id):
+@app.route("/patients", methods=["GET"])
+def get_patients():
+
+    doctor_id = session.get("doctor_id")
+    if not doctor_id:
+        return jsonify({"error": "Unauthorized - Please log in"}), 401
+    
     conn = get_db()
     patients = conn.execute(
         "SELECT * FROM patients WHERE doctor_id = ?", (doctor_id,)).fetchall()
