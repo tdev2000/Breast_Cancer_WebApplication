@@ -2,7 +2,7 @@
     <div class="container">
         
        <!--Welcome Message-->
-       <h1>Welcome,Dr. {{ doctorName }}</h1>
+       <h1>Welcome, {{ doctorName }}</h1>
        <p class="subtitle">Breast Cancer Detection Dashboard</p>
 
        <!--Crads-->
@@ -61,7 +61,10 @@ export default {
             const doctorId = localStorage.getItem("doctorId");
 
             //fetch patients for this doctor
-            const response = await fetch(`http://localhost:5000/api/patients?doctorId=${doctorId}`);
+            const response = await fetch("http://localhost:5000/patients", {
+                credentials: "include"
+            });
+
             const data = await response.json();
             this.patients = data;
         } catch (error) {

@@ -25,7 +25,7 @@ app = Flask(__name__)
 app.secret_key = "secret_key_123"  #required for session tracking
 
 #Enable CORS with credentials
-CORS(app,supports_credentials=True),
+CORS(app,supports_credentials=True)
 
 #----------------------------------------------
 # HOME ROUTE
@@ -65,12 +65,10 @@ def register():
         return jsonify({"error": "Name is required"}), 400
     if not email or not is_valid_email(email):
         return jsonify(
-            {"error": "Invalid email format"}
-            ), 400
+            {"error": "Invalid email format"} ), 400
     if not password or not is_valid_password(password):
         return jsonify(
-            {"error": "Password must be at least 8 characters long, include a number & special character"}
-            ), 400  
+            {"error": "Password must be at least 8 characters long, include a number & special character"}), 400  
     
     #------------------DATABASE CHECK-------------------
     conn = get_db()
@@ -106,9 +104,9 @@ def login():
         return jsonify(
             {"error": "Invalid email format"}
             ), 400
-    if not password or not is_valid_password(password):
+    if not password:
         return jsonify(
-            {"error": "Password must be at least 8 characters long, include a number & special character"}
+            {"error": "Password is required"}
             ), 400  
     
     #------------------DATABASE CHECK-------------------
@@ -189,6 +187,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 @app.route("/predict", methods=["POST"])
 def predict():
 
+    print("PREDICT ROUTE HIT")
     #Check if doctor is logged in
     doctor_id = session.get("doctor_id")
     if not doctor_id:
@@ -201,7 +200,17 @@ def predict():
     file_path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
     file.save(file_path)
 
-    # Preprocess image
+    #----------------------------------------------
+    #GET PATIENT DETAILS FROM FRONTEND
+    #---------------------------------------------- 
+    first_name = request.form.get("firstName")
+    last_name = request.form.get("lastName")
+    date_of_birth = request.form.get("dateOfBirth")
+    history = request.form.get("history")
+
+    #----------------------------------------------
+    #PREPROCESS IMAGE
+    #----------------------------------------------
     image = preprocess_image(file_path)
 
     # Run model
@@ -209,9 +218,19 @@ def predict():
     interpreter.invoke()
     output = interpreter.get_tensor(output_details[0]["index"])
 
-    predicted_index = int(np.argmax(output))
-    predicted_class = class_names[predicted_index]
-    confidence = float(output[0][predicted_index])
+    output = np.array(output)
+    #----------------------------------------------
+    #GET PREDICTION & CONFIDENCE
+    #----------------------------------------------
+    try:
+        predicted_index = int(np.argmax(output))
+        predicted_class = class_names[predicted_index]
+        confidence = float(output[0][predicted_index]) 
+
+
+    except:
+        predicted_class = "Unknown"
+        confidence = 0.0
 
     # Save prediction to database
     conn = get_db()
@@ -220,15 +239,47 @@ def predict():
     (doctor_id, first_name, last_name, date_of_birth, history, prediction, confidence) 
     VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
-        doctor_id, "Temp", "Temp", "N/A", "0", predicted_class, confidence
-         ))
+        doctor_id,
+        first_name,
+        last_name,
+        date_of_birth,
+        history,
+        predicted_class,
+        confidence
+    ))
+
+    #----------------------------------------------
+    #DOCTORE RECCOMENDATION 
+    #----------------------------------------------
+    referral_suggestions = []
+
+    #Get diagnosis id
+    diagnosis_row = conn.execute(
+        "SELECT id FROM diagnosis WHERE type = ?", (predicted_class,)
+    ).fetchone()
     
+    diagnosis_id = None
+    if diagnosis_row:
+        diagnosis_id = diagnosis_row["id"]
+
+        #Get recomended doctors
+        doctors = conn.execute("""
+        SELECT d.id, d.name, d.specialization, d.rating, dd.priority_level
+        FROM doctors d
+        JOIN doctor_diagnosis dd ON d.id = dd.doctor_id
+        WHERE dd.diagnosis_id = ?
+        ORDER BY dd.priority_level DESC, d.rating DESC
+        """, (diagnosis_id,)).fetchall()
+
+        referral_suggestions = [dict(doctor) for doctor in doctors]
+
     conn.commit()
     conn.close()
 
     return jsonify({
-        "prediction": predicted_class,
-        "confidence": confidence 
+    "prediction": predicted_class,
+    "confidence": confidence,
+    "referral_suggestions": referral_suggestions
     })
 
 # ----------------------------------------------

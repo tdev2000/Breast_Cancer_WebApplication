@@ -40,15 +40,16 @@ export default {
     async mounted() {
         try {
             //call backend API to get patients for this doctor
-            const response = await fetch("http://localhost:5000/patients", {
+            const response = await fetch(`http://localhost:5000/patients`, {
+                method: "GET",
                 credentials: "include"
-        });
+            });
         
             //convert response to JSON
             const data = await response.json();
-
             //store data in patients array(for table display)
             this.patients = data;
+
         } catch (error) {
             //if anything fails, show error in console
             console.error("Error fetching patient data:", error);

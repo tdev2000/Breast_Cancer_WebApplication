@@ -17,10 +17,21 @@
         <button class="primary" @click="uploadImage">Upload & Predict</button>
 
         <!--Prediction Result-->
-        <p v-if="result" class="result">
+        <p v-if="result && result.prediction" class="result">
             Prediction: {{ result.prediction }} <br/>
-            Confidence: {{ (result.confidence * 100).toFixed(2) }}%
+            Confidence: {{ result.confidence ? (result.confidence * 100).toFixed(2) + '%' : 'N/A' }}
         </p>
+
+        <div v-if="result?.referral_suggestions">
+            <h3>Referral Suggestions</h3>
+            <div v-for="doc in result.referral_suggestions" :key="doc.id" >
+                <p>
+                    {{ doc.name }}
+                    ({{ doc.specialization }})
+                    {{ doc.rating }}
+                </p>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -59,12 +70,12 @@
                 formData.append('lastName', this.lastName)
                 formData.append('dateOfBirth', this.dateOfBirth);
                 formData.append('history', this.history);
-                formData.append('doctorId', localStorage.getItem("doctorId"));
                 
                 try {
                     const response = await fetch('http://localhost:5000/predict', {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        credentials: "include"
                     });
 
                     const data = await response.json();

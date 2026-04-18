@@ -33,10 +33,12 @@ export default {
 
             try {
                 const response = await fetch("http://localhost:5000/register", {
+                    credentials: "include",
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
+                    credentials: "include",
                     body: JSON.stringify({
                         name: this.name,
                         email: this.email,
@@ -44,7 +46,7 @@ export default {
                     })
                 });
 
-                const data = await respone.json();
+                const data = await response.json();
 
                 if (response.ok) {
                     alert("Registration successful! Please log in.");

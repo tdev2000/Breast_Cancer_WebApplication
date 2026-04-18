@@ -24,11 +24,12 @@ export default {
         async login() {
             try {
                 //call backend API to validate login
-                const response = await fetch("http://localhost:8080/api/login", {
+                const response = await fetch("http://localhost:5000/login", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
+                    credentials: "include",
                     body: JSON.stringify({
                         email: this.email,
                         password: this.password
@@ -43,8 +44,8 @@ export default {
 
                 if (response.ok) {
                     //store doctor info 
-                    localStorage.setItem("doctorId", data.doctorId);
-                    localStorage.setItem("doctorName", data.doctorName);
+                    localStorage.setItem("doctorId", data.doctor_id);
+                    localStorage.setItem("doctorName", data.name);
                     localStorage.setItem("isLoggedIn", "true");
 
                     //redirect to dashboard after successful login
