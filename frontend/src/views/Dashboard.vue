@@ -2,7 +2,7 @@
     <div class="container">
         
        <!--Welcome Message-->
-       <h1>Welcome, {{ doctorName }}</h1>
+       <h1>Welcome Back, Dr. {{ doctorName }}</h1>
        <p class="subtitle">Breast Cancer Detection Dashboard</p>
 
        <!--Crads-->
@@ -36,6 +36,7 @@
             <div class="actions">
                 <h3>Quick Actions</h3>
                 <button @click="$router.push('/upload')">Upload New Image</button>
+                <br>
                 <br>
                 <button @click="$router.push('/patients')">View Patients</button>
             </div>

@@ -3,8 +3,9 @@
 # ----------------------------------------------
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
 import tensorflow as tf
-import numpy as np
+import numpy as np  
 import cv2
 import os
 import sqlite3
@@ -81,9 +82,11 @@ def register():
         return jsonify({"error": "Already registered"}), 400
     
     #Insert new doctor into database
+    #Hash the password before storing
+    hashed_password = generate_password_hash(password)
     conn.execute(
         "INSERT INTO doctors (name, email, password) VALUES (?, ?, ?)", 
-        (name, email, password)
+        (name.strip(), email.strip(), hashed_password)
     )
     conn.commit()
     conn.close()
@@ -113,18 +116,17 @@ def login():
 
     conn = get_db()
     doctor = conn.execute(
-        "SELECT * FROM doctors WHERE email = ? AND password = ?", 
-        (email, password)
+        "SELECT * FROM doctors WHERE email = ?", 
+        (email.strip(),)
     ).fetchone()
-    conn.close()
 
-    if doctor:
+    if doctor and check_password_hash(doctor["password"], password):
         #Store doctor info in session 
         session["doctor_id"] = doctor["id"]
         session["doctor_name"] = doctor["name"]
 
         return jsonify({
-            "success": "True", 
+            "success": True, 
             "doctor_id": doctor["id"], 
             "name": doctor["name"]
         })
@@ -164,11 +166,7 @@ def preprocess_image(image_path):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = cv2.resize(image, (224, 224))
 
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    _, thresholded = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
-    thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2RGB)
-
-    image = thresholded.astype(np.float32) / 255.0
+    image = image.astype(np.float32) / 255.0
     image = np.expand_dims(image, axis=0)
 
     return image
@@ -264,7 +262,8 @@ def predict():
 
         #Get recomended doctors
         doctors = conn.execute("""
-        SELECT d.id, d.name, d.specialization, d.rating, dd.priority_level
+        SELECT d.id, d.name, d.specialization, d.rating, d.hospital_affiliation, d.location,d.availability, 
+        d.years_of_experience,d.cases_handled, dd.priority_level
         FROM doctors d
         JOIN doctor_diagnosis dd ON d.id = dd.doctor_id
         WHERE dd.diagnosis_id = ?
@@ -299,6 +298,43 @@ def get_patients():
 
     return jsonify([dict(patient) for patient in patients])
 
+# ----------------------------------------------
+#DELETE PATIENT RECORD 
+#-----------------------------------------------
+@app.route("/patients/<int:patient_id>", methods=["DELETE"])
+def delete_patient(patient_id):
+    conn = get_db()
+
+    conn.execute("DELETE FROM patients WHERE id = ?", (patient_id,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "Patient record deleted successfully"})
+
+# ----------------------------------------------
+#Update patient record
+#-----------------------------------------------
+@app.route("/patients/<int:patient_id>", methods=["PUT"])
+def update_patient(patient_id):
+    data = request.get_json()
+
+    conn = get_db()
+    conn.execute("""
+        UPDATE patients
+        SET first_name = ?, last_name = ?, date_of_birth = ?, history = ?
+        WHERE id = ?
+    """, (
+        data.get("first_name"),
+        data.get("last_name"),
+        data.get("date_of_birth"),
+        data.get("history"),
+        patient_id
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "Patient record updated successfully"})
 # ----------------------------------------------
 # RUN FLASK APP
 # ----------------------------------------------

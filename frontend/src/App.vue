@@ -1,6 +1,6 @@
 <template>
   <!--Navebar only after login-->
-  <Navbar v-if="isLoggedIn"/>
+  <Navbar v-if="showNavbar"/>
    <router-view/>
   </template>
   
@@ -10,8 +10,13 @@
   export default {
     components: { Navbar},
     computed: {
-      isLoggedIn() {
-        return localStorage.getItem("isLoggedIn") === "true";
+      showNavbar() {
+        const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+
+        //Hide navbar on auth pages
+        const hiddenPages = ['/', '/login', '/register'];
+
+        return isLoggedIn && !hiddenPages.includes(this.$route.path);
       }
     }
   };

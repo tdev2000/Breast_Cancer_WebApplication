@@ -13,8 +13,8 @@ const routes = [
     { path: '/dashboard', component: Dashboard, meta: { requiresAuth: true }}, // Protected route
     { path: '/register', name: 'Register', component: Register },
     { path: '/login', name: 'Login', component: Login },
-    { path: '/upload', name: 'Upload', component: Upload },
-    { path: '/patients', name: 'PatientDetails', component: PatientDetails }
+    { path: '/upload', name: 'Upload', component: Upload , meta: { requiresAuth: true }}, // Protected route
+    { path: '/patients', name: 'PatientDetails', component: PatientDetails, meta: { requiresAuth: true }} // Protected route
 ]
 
 const router = createRouter({
@@ -26,11 +26,15 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
 
+    // allow public pages
+    const publicPages = ['/', '/login', '/register'];
+
+    // block protected routes
     if (to.meta.requiresAuth && !isLoggedIn) {
-        next('/login'); //redirect if not logged in
-    } else {
-        next(); //proceed to route
+        return next('/login');
     }
+
+    next();
 });
 
 export default router;

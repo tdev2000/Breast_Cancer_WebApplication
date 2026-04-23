@@ -52,7 +52,7 @@ export default {
                     alert("Registration successful! Please log in.");
                     this.$router.push('/login');
                 } else {
-                    alert("Registration failed: " + data.message);
+                    alert("Registration failed: " + data.error);
                 }
             } catch (error) {
                 console.error(error);

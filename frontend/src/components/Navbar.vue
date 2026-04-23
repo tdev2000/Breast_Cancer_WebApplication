@@ -12,13 +12,12 @@
       <span class="tab" @click="$router.push('/dashboard')">Dashboard</span>
       <span class="tab" @click="$router.push('/upload')">Upload</span>
       <span class="tab" @click="$router.push('/patients')">Patient Details</span>
-      <span class="tab" @click="$router.push('/logout')">Logout</span>
+      <span class="tab logout" @click="logout">Logout</span>
     </div>
   </nav>
 </template>
 
 <script>
-import { computed } from 'vue';
 
 export default {
     computed :{
@@ -31,8 +30,8 @@ export default {
         this.$router.push('/');
       },
       logout() {
-        localStorage.removeItem("isLoggedIn");
-        this.$router.push('/');
+        localStorage.clear();
+        this.$router.push('/login');
       }
   }
 };

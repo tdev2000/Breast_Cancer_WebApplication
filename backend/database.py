@@ -15,26 +15,25 @@ CREATE TABLE IF NOT EXISTS doctors (
     email TEXT UNIQUE,
     password TEXT,
                
-    specialization TEXT,
-    oncology_type TEXT,
+    specialization TEXT NOT NULL DEFAULT 'General',
+    oncology_type TEXT NOT NULL DEFAULT 'Diagnostic',
                
-    breast_cancer_specialist BOOLEAN DEFAULT 0,
+    breast_cancer_specialist INTEGER DEFAULT 0,
 
-    years_of_experience INTEGER,
-    cases_handled INTEGER,
-    malignant_case_experience INTEGER,
-    benign_case_experience INTEGER,
+    years_of_experience INTEGER DEFAULT 0,
+    cases_handled INTEGER DEFAULT 0,
+    malignant_case_experience INTEGER DEFAULT 0,
+    benign_case_experience INTEGER DEFAULT 0,
                
-    treatment_types TEXT,
-    diagnostic_skills TEXT,
+    treatment_types TEXT DEFAULT 'Not Specified',
+    diagnostic_skills TEXT DEFAULT 'Basic',
     
-    hospital_affiliation TEXT,
-    location TEXT,
+    hospital_affiliation TEXT DEFAULT 'Not Specified',
+    location TEXT DEFAULT 'UNKNOWN',         
+    availability TEXT DEFAULT 'Based on appointments',
                
-    availability TEXT,
     rating REAL DEFAULT 0,
-               
-    description TEXT
+    description TEXT DEFAULT 'No description provided'
 ) 
 """)
 
@@ -107,14 +106,24 @@ cursor.execute("INSERT OR IGNORE INTO doctor_diagnosis VALUES(1, 1, 3)")
 
 #Doctors
 cursor.execute("""
-INSERT OR IGNORE INTO doctors 
-               (id, name, email, password, specialization, oncology_type, breast_cancer_specialist, 
-               years_of_experience, malignant_case_experience, benign_case_experience, 
-               treatment_types, diagnostic_skills, hospital_affiliation, location, availability, rating, description)
+INSERT OR IGNORE INTO doctors (
+id, name, email, password, specialization, oncology_type, breast_cancer_specialist, 
+years_of_experience, cases_handled, malignant_case_experience, benign_case_experience, 
+treatment_types, diagnostic_skills, hospital_affiliation, location, availability, rating, description)
 VALUES 
-               (1, 'Dr. Dave Doe', 'dr.davedoe@example.com', 'password@123	', 'Radiologist', 'diagnostic', 1, 10, 80, 120, 'Chemotherapy, Immunotherapy', 'Ultrasound', 'Cancer Hospital', 'London', 'Mon-Fri 9am-5pm', 4.5, 'Experienced oncologist specializing in breast cancer.')
-               (2, 'Dr. Jane Smith', 'dr.janesmith@example.com', 'jane098', 'Oncologist', 'medical', 1, 10, 150, 70, 'Radiation Therapy', 'MRI', 'City Hospital', 'London', 'Mon-Fri 9am-5pm', 4.8, 'Expert in imaging diagnosis.')
-               (3, 'Dr. John Doe', 'dr.johndoe@example.com', 'john543@', 'Surgen', 'surgical', 1, 20, 150, 100, 'Surgery', 'Biopsy, MRI, Ultrasound', 'Royal Hospital', 'London', 'Mon-Fri 9am-5pm', 4.6, 'Cancer treatment specialist.')
+               
+(1, 'Dr. Dave Doe', 'dave@example.com', 'pass', 'Radiologist', 'diagnostic', 1, 12, 200, 90, 110, 'MRI, Ultrasound', 'Imaging', 'Cancer Hospital', 'London', 'Mon-Fri', 4.5, 'Senior radiologist'),
+
+(2, 'Dr. Jane Smith', 'jane@example.com', 'pass', 'Oncologist', 'medical', 1, 15, 300, 150, 80, 'Chemotherapy', 'CT Scan', 'City Hospital', 'London', 'Mon-Fri', 4.8, 'Cancer treatment expert'),
+
+(3, 'Dr. John Lee', 'john@example.com', 'pass', 'Surgeon', 'surgical', 1, 8, 220, 120, 60, 'Surgery', 'Biopsy', 'Royal Hospital', 'London', 'Mon-Fri', 4.6, 'Breast surgery specialist'),
+
+(4, 'Dr. Emily Carter', 'emily@example.com', 'pass', 'Radiologist', 'diagnostic', 1, 10, 180, 70, 90, 'MRI', 'Ultrasound', 'General Hospital', 'Manchester', 'Mon-Fri', 4.3, 'Imaging expert'),
+
+(5, 'Dr. Ahmed Khan', 'ahmed@example.com', 'pass', 'Oncologist', 'medical', 1, 20, 500, 200, 150, 'Radiation Therapy', 'CT Scan', 'Cancer Institute', 'London', '24/7', 4.9, 'Senior oncologist'),
+
+(6, 'Dr. Sarah Lee', 'sarah@example.com', 'pass', 'Pathologist', 'diagnostic', 1, 9, 100, 50, 40, 'Lab Analysis', 'Biopsy', 'Medical Center', 'London', 'Mon-Fri', 4.2, 'Pathology specialist')
+               
 """)
 #---------------------------------------------
 #MATCHING 

@@ -31,7 +31,7 @@ export default {
                     },
                     credentials: "include",
                     body: JSON.stringify({
-                        email: this.email,
+                        email: this.email.trim(),
                         password: this.password
                     })
                 });
@@ -57,8 +57,8 @@ export default {
             } catch (error) {
                 console.error(error);
                 alert("Login failed. Please check your credentials and try again.");
-            }
-        }
+             }
+        }  
     }
 };
 </script>
