@@ -29,23 +29,6 @@ This project is a web-based AI system that detects breast cancer from ultrasound
 
 ---
 
-## 📁 Project Structure
-
-backend/
-│── app.py  
-│── model/  
-│── database/  
-│── requirements.txt  
-
-frontend/
-│── src/  
-│   ├── views/  
-│   ├── components/  
-│   ├── router/  
-│── package.json  
-
----
-
 ## ⚙️ Installation & Setup
 
 ### 1. Clone Repository
@@ -100,10 +83,7 @@ npm run dev
 
 ## Or
 - Download the breast_cancer_cnn.tflite from here.
-- Move it to the "/saved_model folder".
 https://universityofwestminster-my.sharepoint.com/:u:/g/personal/w1899253_westminster_ac_uk/IQDag-8Cn3u9SYTJgLGhlOWKAdRW9K_DmHBQJPn2-7ptq0g?e=peAIWP
-
-
 
 ## 🔗 API Endpoints
 
