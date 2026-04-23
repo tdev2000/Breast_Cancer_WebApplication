@@ -1,14 +1,23 @@
-# Virtual environments
-venv/
-backend/venv/
-
-# Python cache
+# Python / backend
 __pycache__/
+venv/
 *.pyc
 
-# Jupyter
-.ipynb_checkpoints/
+# ML models (VERY IMPORTANT)
+backend/saved_model/
+*.keras
+*.h5
 
-# OS files
+# Dataset (too large for GitHub)
+backend/dataset/
+
+# Uploads (runtime images)
+backend/uploads/
+
+# Node / frontend
+node_modules/
+dist/
+
+# IDE files
+.vscode/
 .DS_Store
-
