@@ -4,9 +4,10 @@ venv/
 *.pyc
 
 # ML models (VERY IMPORTANT)
-backend/saved_model/
+#backend/saved_model/
 *.keras
 *.h5
+*.tflite
 
 # Dataset (too large for GitHub)
 backend/dataset/
