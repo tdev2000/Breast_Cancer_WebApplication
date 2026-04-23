@@ -100,7 +100,7 @@ npm run dev
 
 ## Or
 - Download the breast_cancer_cnn.tflite from here.
-- Move it to the "/sav_model folder".
+- Move it to the "/save_model folder".
 https://universityofwestminster-my.sharepoint.com/:u:/g/personal/w1899253_westminster_ac_uk/IQDag-8Cn3u9SYTJgLGhlOWKAdRW9K_DmHBQJPn2-7ptq0g?e=peAIWP
 
 
